@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#F59E0B" />
+  <title>池上 x 知本・小狒狒放鬆之旅</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐒</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Noto Sans TC"', 'system-ui', 'sans-serif'] },
+          keyframes: {
+            fadeUp: { '0%': { opacity: '0', transform: 'translateY(12px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+            popIn: { '0%': { opacity: '0', transform: 'scale(.94)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
+            floaty: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-6px)' } },
+          },
+          animation: {
+            fadeUp: 'fadeUp .45s ease-out both',
+            popIn: 'popIn .25s ease-out both',
+            floaty: 'floaty 3.5s ease-in-out infinite',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html { -webkit-tap-highlight-color: transparent; }
+    body { min-height: 100vh; }
+    .bg-mood { transition: background 1.2s ease; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { scrollbar-width: none; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script>window.react = window.React; // lucide-react UMD looks up the lowercase global</script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide-react@0.460.0/dist/umd/lucide-react.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.4/babel.min.js"></script>
+</head>
+<body class="font-sans text-stone-800 antialiased">
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useMemo, useCallback } = React;
+    const {
+      Train, Coffee, MapPin, CheckSquare, Calendar, Compass, Clock, Utensils, Waves, Sparkles,
+      Sun, CloudFog, Trees, Bike, Bath, Luggage, Copy, Check, ChevronDown, X, Plus, Trash2,
+      NotebookPen, ShoppingBag, Navigation, Droplets, BedDouble, CircleCheck, Flame, Timer, Footprints,
+    } = LucideReact;
+
+    // ---------- Constants ----------
+    const TZ_OFFSET = '+08:00';
+    const DEPARTURE = new Date(`2026-10-16T07:05:00${TZ_OFFSET}`);
+    const TRIP_END = new Date(`2026-10-18T17:53:00${TZ_OFFSET}`);
+    const STORAGE_KEYS = {
+      packing: 'czt-packing-v1',
+      memo: 'czt-memo-v1',
+      mustEat: 'czt-musteat-v1',
+      mood: 'czt-mood-v1',
+    };
+
+    const CATEGORIES = {
+      transport: { label: '交通', className: 'bg-sky-100 text-sky-700 ring-sky-200' },
+      food: { label: '美食', className: 'bg-amber-100 text-amber-700 ring-amber-200' },
+      sight: { label: '景點', className: 'bg-emerald-100 text-emerald-700 ring-emerald-200' },
+      stay: { label: '住宿', className: 'bg-violet-100 text-violet-700 ring-violet-200' },
+      experience: { label: '體驗', className: 'bg-cyan-100 text-cyan-700 ring-cyan-200' },
+    };
+
+    const MOODS = {
+      sunny: {
+        label: '晴朗池上',
+        icon: Sun,
+        background: 'linear-gradient(160deg, #FEF3C7 0%, #FDE68A 28%, #FFFBEB 60%, #F5F5F4 100%)',
+        accent: 'from-amber-400 to-orange-400',
+      },
+      misty: {
+        label: '霧氣知本森林',
+        icon: CloudFog,
+        background: 'linear-gradient(160deg, #D1FAE5 0%, #CFFAFE 35%, #ECFDF5 65%, #E7E5E4 100%)',
+        accent: 'from-emerald-400 to-cyan-500',
+      },
+    };
+
+    // ---------- Food spots ----------
+    const FOOD_SPOTS = [
+      {
+        id: 'haodian',
+        name: '池上好店',
+        tag: '午餐排隊推薦',
+        area: '池上',
+        day: 'Day 1 午餐',
+        icon: Utensils,
+        tone: 'amber',
+        mustTry: ['台式椒麻雞', '台式叉燒飯', '筍乾爌肉', '池上米白飯（必吃）'],
+        tip: '位於多力米故事館內，簡餐附白飯、湯品與小菜。只營業午餐，熱門時段需現場排隊。',
+        distance: '池上火車站步行約 10 分鐘',
+        mapQuery: '池上好店 多力米故事館',
+      },
+      {
+        id: 'fuyuan',
+        name: '福原豆腐店',
+        tag: '池上特色',
+        area: '池上',
+        day: 'Day 1 午餐 / 點心',
+        icon: Coffee,
+        tone: 'amber',
+        mustTry: ['古早味豆花', '炸豆腐', '手工豆漿'],
+        tip: '老字號豆腐店，豆花與炸豆腐最受推薦。週二公休，出發前再確認營業時間。',
+        distance: '池上市區，步行可達',
+        mapQuery: '池上 福原豆腐店',
+      },
+      {
+        id: 'wutao',
+        name: '悟饕飯包',
+        tag: '池上特色',
+        area: '池上',
+        day: 'Day 1 午餐備案',
+        icon: ShoppingBag,
+        tone: 'amber',
+        mustTry: ['招牌池上飯包', '木片便當盒（拍照必備）'],
+        tip: '若池上好店排隊太久，這裡是外帶的好選擇，可帶去大坡池邊野餐。',
+        distance: '池上火車站周邊',
+        mapQuery: '悟饕池上飯包文化故事館',
+      },
+      {
+        id: 'dachi',
+        name: '大池豆皮店',
+        tag: 'Day 2 超人氣早餐',
+        area: '池上',
+        day: 'Day 2 早餐',
+        icon: Flame,
+        tone: 'orange',
+        mustTry: ['香煎豆包', '豆皮壽司', '熱豆漿', '現炸豆皮（伴手禮）'],
+        tip: '人氣早餐店，越晚越容易賣完，建議 9 點一到就出發，退房前先吃。',
+        distance: '池上市區，單車或步行可達',
+        mapQuery: '池上 大池豆皮店',
+      },
+      {
+        id: 'bakery',
+        name: '知本山上有間麵包店',
+        tag: '精緻點心',
+        area: '知本',
+        day: 'Day 2 順路買',
+        icon: Coffee,
+        tone: 'emerald',
+        mustTry: ['招牌歐式麵包', '當日限定口味'],
+        tip: '租完機車往飯店途中順路購買，可當作森林健行時的點心。',
+        distance: '知本火車站騎機車約 10–15 分鐘',
+        mapQuery: '知本 山上有間麵包店',
+      },
+      {
+        id: 'dorayaki',
+        name: '海邊那個職人手作',
+        tag: '銅鑼燒專賣',
+        area: '知本',
+        day: 'Day 2 順路買',
+        icon: Sparkles,
+        tone: 'cyan',
+        mustTry: ['招牌銅鑼燒', '季節限定口味銅鑼燒'],
+        tip: '手作銅鑼燒數量有限，建議下午前抵達；適合買回飯店泡完湯當甜點。',
+        distance: '知本市區，機車順路',
+        mapQuery: '海邊那個職人手作 銅鑼燒 知本',
+      },
+      {
+        id: 'beefnoodle',
+        name: '老傳長砂鍋手工牛羊肉麵',
+        tag: 'Day 3 特色午餐',
+        area: '知本',
+        day: 'Day 3 午餐',
+        icon: Utensils,
+        tone: 'emerald',
+        mustTry: ['砂鍋牛肉麵', '砂鍋羊肉麵', '手工麵條'],
+        tip: '吃完要趕 13:07 的火車，12:45 前務必離開去還機車。',
+        distance: '知本溫泉街，騎機車至知本站約 15 分鐘',
+        mapQuery: '老傳長砂鍋手工牛羊肉麵',
+      },
+    ];
+
+    const FOOD_SPOT_MAP = Object.fromEntries(FOOD_SPOTS.map((spot) => [spot.id, spot]));
+
+    // ---------- Itinerary ----------
+    const DAYS = [
+      {
+        id: 'day1',
+        date: '2026-10-16',
+        tabLabel: 'Day 1',
+        dateLabel: '10/16 (五)',
+        emoji: '🌾',
+        theme: '池上金黃稻浪 & SUP',
+        subtitle: '池上放空日',
+        gradient: 'from-amber-400 to-yellow-300',
+        events: [
+          {
+            id: 'd1-1', start: '07:05', end: '10:50', category: 'transport', icon: Train,
+            location: '臺北車站 → 池上火車站', action: '搭乘普悠瑪 22 次',
+            note: '欣賞東部鐵路沿線風景',
+            booking: { type: 'booked', label: '已預定' },
+            tips: ['建議提早 15 分鐘到月台', '右側靠窗座位可看太平洋海景（花蓮段後）'],
+            copyItems: [{ label: '車次', value: '普悠瑪 22 次 臺北 07:05 → 池上 10:50' }],
+          },
+          {
+            id: 'd1-2', start: '10:50', end: '11:30', category: 'stay', icon: Luggage,
+            location: '池上火車站', action: '前往民宿寄放行李',
+            note: '住宿：藍天山丘池上館',
+            tips: ['先寄放行李再輕裝去吃午餐'],
+            copyItems: [{ label: '住宿', value: '藍天山丘池上館' }],
+            mapQuery: '藍天山丘池上館',
+          },
+          {
+            id: 'd1-3', start: '11:30', end: '14:00', category: 'food', icon: Utensils,
+            location: '池上火車站周邊', action: '午餐時刻',
+            note: '推薦：池上好店、悟饕飯包、福原豆腐店',
+            booking: { type: 'queue', label: '熱門需現場排隊' },
+            tips: ['池上好店要現場排隊，建議 11:30 一到就先去抽號', '排太久可改買悟饕飯包外帶', '13:45 前吃完，留時間走到大坡池'],
+            foodSpotIds: ['haodian', 'wutao', 'fuyuan'],
+          },
+          {
+            id: 'd1-4', start: '14:00', end: '15:00', category: 'experience', icon: Waves,
+            location: '大坡池', action: 'SUP 體驗',
+            note: 'KKDay 預約 14:00',
+            booking: { type: 'booked', label: '已預定' },
+            tips: ['裡面穿泳衣或防磨衣，帶一套替換衣物', '手機請用防水袋', '記得擦防曬'],
+            copyItems: [{ label: '預約', value: 'KKDay 大坡池 SUP 10/16 14:00' }],
+            mapQuery: '大坡池',
+          },
+          {
+            id: 'd1-5', start: '15:00', end: '16:00', category: 'stay', icon: Coffee,
+            location: '藍天山丘池上館', action: 'Check in、吃點心',
+            note: '9號咖啡',
+            booking: { type: 'booked', label: '已預定' },
+            tips: ['SUP 後先回房沖澡換衣', '9號咖啡小歇一下再出發'],
+            copyItems: [{ label: '住宿', value: '藍天山丘池上館' }],
+            mapQuery: '藍天山丘池上館',
+          },
+          {
+            id: 'd1-6', start: '16:00', end: '18:00', category: 'sight', icon: Bike,
+            location: '伯朗大道', action: '換單車、黃金海浪散步',
+            note: '客尊鐵馬，外圍步行或換單車',
+            tips: ['16:30 之後光線最美，稻浪呈金黃色', '金城武樹、天堂路都在沿線', '伯朗大道內禁止汽機車，騎單車最舒服'],
+            copyItems: [{ label: '租車', value: '客尊鐵馬 池上' }],
+            mapQuery: '伯朗大道',
+          },
+          {
+            id: 'd1-7', start: '18:30', end: '20:00', category: 'food', icon: Utensils,
+            location: '池上市區', action: '晚餐時刻',
+            note: 'Hai簡單料理',
+            booking: { type: 'booked', label: '已訂位 18:30' },
+            tips: ['18:30 訂位，記得準時到'],
+            copyItems: [{ label: '餐廳', value: 'Hai簡單料理 池上' }],
+            mapQuery: 'Hai簡單料理 池上',
+          },
+        ],
+      },
+      {
+        id: 'day2',
+        date: '2026-10-17',
+        tabLabel: 'Day 2',
+        dateLabel: '10/17 (六)',
+        emoji: '🌲',
+        theme: '知本森林芬多精',
+        subtitle: '移防知本溫泉區',
+        gradient: 'from-emerald-400 to-teal-300',
+        events: [
+          {
+            id: 'd2-1', start: '09:00', end: '11:00', category: 'food', icon: Coffee,
+            location: '池上', action: '悠閒早餐、退房',
+            note: '推薦：大池豆皮店',
+            booking: { type: 'queue', label: '必吃排隊美食' },
+            tips: ['大池豆皮店越晚越容易賣完，建議先吃早餐再回來退房', '可加買現炸豆皮當伴手禮'],
+            foodSpotIds: ['dachi'],
+          },
+          {
+            id: 'd2-2', start: '11:00', end: '11:30', category: 'transport', icon: Luggage,
+            location: '池上火車站', action: '準備搭車',
+            tips: ['確認行李、充電線都有帶走'],
+          },
+          {
+            id: 'd2-3', start: '11:56', end: '12:44', category: 'transport', icon: Train,
+            location: '池上站 → 知本站', action: '搭乘自強號 410 次',
+            note: '準時搭車',
+            booking: { type: 'booked', label: '已預定' },
+            tips: ['11:45 前到月台'],
+            copyItems: [{ label: '車次', value: '自強號 410 次 池上 11:56 → 知本 12:44' }],
+          },
+          {
+            id: 'd2-4', start: '12:44', end: '13:30', category: 'transport', icon: Bike,
+            location: '知本火車站', action: '租機車、飯店寄放行李',
+            note: '崔式機車、住宿：知本金聯世紀酒店',
+            booking: { type: 'booked', label: '機車、酒店已預定' },
+            tips: ['租車時拍下車況照片', '順路買：知本山上有間麵包店、海邊那個職人手作／銅鑼燒專賣店'],
+            copyItems: [
+              { label: '機車', value: '崔式機車 知本' },
+              { label: '住宿', value: '知本金聯世紀酒店' },
+            ],
+            foodSpotIds: ['bakery', 'dorayaki'],
+            mapQuery: '知本金聯世紀酒店',
+          },
+          {
+            id: 'd2-5', start: '13:30', end: '17:00', category: 'sight', icon: Trees,
+            location: '知本國家森林遊樂區', action: '森林健行、芬多精體驗',
+            note: '走榕園與好漢坡步道',
+            tips: ['走榕園與好漢坡步道', '好漢坡階梯多，穿運動鞋', '山區蚊蟲多，記得噴防蚊液', '園區有台灣獼猴，食物收好'],
+            copyItems: [{ label: '地點', value: '知本國家森林遊樂區' }],
+            mapQuery: '知本國家森林遊樂區',
+          },
+          {
+            id: 'd2-6', start: '17:00', end: '19:00', category: 'stay', icon: Bath,
+            location: '知本金聯世紀酒店', action: '飯店泡湯、休息',
+            note: '消除兩天疲勞',
+            booking: { type: 'booked', label: '已預定' },
+            tips: ['泡湯前後多補充水分', '每次泡 15 分鐘左右就起身休息'],
+            copyItems: [{ label: '住宿', value: '知本金聯世紀酒店' }],
+            mapQuery: '知本金聯世紀酒店',
+          },
+          {
+            id: 'd2-7', start: '19:00', end: '20:30', category: 'food', icon: Utensils,
+            location: '知本溫泉街', action: '晚餐時刻',
+            note: '享受舒適飯店晚餐',
+            tips: ['飯後可在溫泉街散步消化'],
+          },
+        ],
+      },
+      {
+        id: 'day3',
+        date: '2026-10-18',
+        tabLabel: 'Day 3',
+        dateLabel: '10/18 (日)',
+        emoji: '💦',
+        theme: '白龍瀑布 & 歸途',
+        subtitle: '瀑布洗禮與歸途',
+        gradient: 'from-cyan-400 to-sky-300',
+        events: [
+          {
+            id: 'd3-1', start: '08:30', end: '10:00', category: 'stay', icon: BedDouble,
+            location: '飯店', action: '早餐、晨湯',
+            note: '睡到自然醒、飯店含早餐',
+            tips: ['退房前確認房內物品', '行李可先寄放在櫃檯或放機車'],
+          },
+          {
+            id: 'd3-2', start: '10:00', end: '10:20', category: 'transport', icon: Navigation,
+            location: '交通移動', action: '騎機車前往白龍瀑布',
+          },
+          {
+            id: 'd3-3', start: '10:20', end: '11:30', category: 'sight', icon: Droplets,
+            location: '知本溫泉區', action: '白龍瀑布',
+            note: '吸收負離子',
+            tips: ['步道可能濕滑，注意腳步', '11:30 準時離開去吃午餐'],
+            copyItems: [{ label: '地點', value: '知本 白龍瀑布' }],
+            mapQuery: '知本 白龍瀑布',
+          },
+          {
+            id: 'd3-4', start: '11:30', end: '11:45', category: 'transport', icon: Navigation,
+            location: '交通移動', action: '騎機車前往溫泉街',
+          },
+          {
+            id: 'd3-5', start: '11:45', end: '12:45', category: 'food', icon: Utensils,
+            location: '知本溫泉街', action: '午餐時刻',
+            note: '老傳長砂鍋手工牛羊肉麵',
+            booking: { type: 'queue', label: '推薦' },
+            tips: ['12:45 前必須出發去還車'],
+            foodSpotIds: ['beefnoodle'],
+          },
+          {
+            id: 'd3-6', start: '12:45', end: '13:00', category: 'transport', icon: Bike,
+            location: '知本火車站', action: '還機車、準備返程',
+            note: '預留還車時間',
+            tips: ['還車前確認油量', '檢查車廂、置物箱有無遺留物品'],
+            copyItems: [{ label: '機車', value: '崔式機車 知本' }],
+          },
+          {
+            id: 'd3-7', start: '13:07', end: '17:53', category: 'transport', icon: Train,
+            location: '知本站 → 臺北車站', action: '搭乘自強號 423 次',
+            note: '結束愉快假期',
+            booking: { type: 'booked', label: '已預定' },
+            tips: ['車程近 5 小時，可準備零食與耳機'],
+            copyItems: [{ label: '車次', value: '自強號 423 次 知本 13:07 → 臺北 17:53' }],
+          },
+        ],
+      },
+    ];
+
+    const DEFAULT_PACKING = [
+      { id: 'p1', text: '身分證、健保卡', category: '證件/車票', checked: false },
+      { id: 'p2', text: '火車電子票券（普悠瑪 22、自強 410、自強 423）', category: '證件/車票', checked: false },
+      { id: 'p3', text: '泳衣 / 防磨衣', category: '泳衣/防磨衣(SUP)', checked: false },
+      { id: 'p4', text: '替換衣物、毛巾、手機防水袋', category: '泳衣/防磨衣(SUP)', checked: false },
+      { id: 'p5', text: '泡湯泳裝、泳帽', category: '泡湯泳裝', checked: false },
+      { id: 'p6', text: '防蚊液', category: '健行防蚊/運動鞋', checked: false },
+      { id: 'p7', text: '好走的運動鞋', category: '健行防蚊/運動鞋', checked: false },
+      { id: 'p8', text: '行動電源、充電線', category: '行動電源', checked: false },
+      { id: 'p9', text: '防曬乳、帽子、太陽眼鏡', category: '其他', checked: false },
+    ];
+
+    const PACKING_CATEGORIES = ['證件/車票', '泳衣/防磨衣(SUP)', '泡湯泳裝', '健行防蚊/運動鞋', '行動電源', '其他'];
+
+    // ---------- Helpers ----------
+    const toDate = (dateString, timeString) => new Date(`${dateString}T${timeString}:00${TZ_OFFSET}`);
+
+    const readStorage = (key, fallback) => {
+      try {
+        const raw = window.localStorage.getItem(key);
+        return raw === null ? fallback : JSON.parse(raw);
+      } catch (error) {
+        return fallback;
+      }
+    };
+
+    const writeStorage = (key, value) => {
+      try {
+        window.localStorage.setItem(key, JSON.stringify(value));
+      } catch (error) {
+        // Storage may be unavailable (private mode); the app still works in-memory.
+      }
+    };
+
+    const usePersistentState = (key, fallback) => {
+      const [value, setValue] = useState(() => readStorage(key, fallback));
+      useEffect(() => { writeStorage(key, value); }, [key, value]);
+      return [value, setValue];
+    };
+
+    // Allows previewing in-trip behaviour via ?now=2026-10-16T14:30
+    const getNowOverride = () => {
+      const param = new URLSearchParams(window.location.search).get('now');
+      if (!param) return null;
+      const parsed = new Date(`${param}${param.length <= 16 ? ':00' : ''}${TZ_OFFSET}`);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    const useNow = () => {
+      const [override] = useState(getNowOverride);
+      const [startedAt] = useState(() => Date.now());
+      const [now, setNow] = useState(() => override || new Date());
+      useEffect(() => {
+        const timer = setInterval(() => {
+          setNow(override ? new Date(override.getTime() + (Date.now() - startedAt)) : new Date());
+        }, 1000);
+        return () => clearInterval(timer);
+      }, [override, startedAt]);
+      return now;
+    };
+
+    const findActiveEvent = (now) => {
+      for (const day of DAYS) {
+        for (const event of day.events) {
+          if (now >= toDate(day.date, event.start) && now < toDate(day.date, event.end)) {
+            return { dayId: day.id, eventId: event.id };
+          }
+        }
+      }
+      return null;
+    };
+
+    const findNextEvent = (now) => {
+      for (const day of DAYS) {
+        for (const event of day.events) {
+          if (toDate(day.date, event.start) > now) return { day, event };
+        }
+      }
+      return null;
+    };
+
+    const copyText = async (text) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (error) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const succeeded = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return succeeded;
+      }
+    };
+
+    const mapUrl = (query) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+
+    const TONE_CLASSES = {
+      amber: 'from-amber-100 to-yellow-50 text-amber-700',
+      orange: 'from-orange-100 to-amber-50 text-orange-700',
+      emerald: 'from-emerald-100 to-green-50 text-emerald-700',
+      cyan: 'from-cyan-100 to-sky-50 text-cyan-700',
+    };
+
+    // ---------- UI pieces ----------
+    const BookingBadge = ({ booking }) => {
+      if (!booking) return null;
+      if (booking.type === 'booked') {
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-0.5 text-xs font-bold text-white shadow-sm shadow-emerald-500/30">
+            <CircleCheck size={13} strokeWidth={2.5} />{booking.label}
+          </span>
+        );
+      }
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-2.5 py-0.5 text-xs font-bold text-amber-950 shadow-sm shadow-amber-400/30">
+          <Flame size={13} strokeWidth={2.5} />{booking.label}
+        </span>
+      );
+    };
+
+    const CategoryBadge = ({ category }) => {
+      const config = CATEGORIES[category];
+      return (
+        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${config.className}`}>{config.label}</span>
+      );
+    };
+
+    const CountdownUnit = ({ value, label }) => (
+      <div className="flex min-w-[3.5rem] flex-col items-center rounded-2xl bg-white/80 px-2 py-2 shadow-sm sm:min-w-[4.5rem]">
+        <span className="text-2xl font-black tabular-nums text-stone-800 sm:text-3xl">{String(value).padStart(2, '0')}</span>
+        <span className="text-[11px] font-medium text-stone-500">{label}</span>
+      </div>
+    );
+
+    const StatusCard = ({ now, activeEvent }) => {
+      const diff = DEPARTURE.getTime() - now.getTime();
+      const isBefore = diff > 0;
+      const isAfter = now >= TRIP_END;
+      const nextEvent = findNextEvent(now);
+
+      if (isBefore) {
+        const totalSeconds = Math.floor(diff / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        return (
+          <div className="rounded-3xl bg-white/70 p-4 shadow-lg shadow-amber-900/5 ring-1 ring-white backdrop-blur-md sm:p-5">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-stone-600">
+              <Timer size={16} className="text-amber-500" />
+              距離出發（10/16 07:05 臺北車站）
+            </div>
+            <div className="flex gap-2 sm:gap-3">
+              <CountdownUnit value={days} label="天" />
+              <CountdownUnit value={hours} label="時" />
+              <CountdownUnit value={minutes} label="分" />
+              <CountdownUnit value={seconds} label="秒" />
+            </div>
+          </div>
+        );
+      }
+
+      if (isAfter) {
+        return (
+          <div className="rounded-3xl bg-white/70 p-5 shadow-lg ring-1 ring-white backdrop-blur-md">
+            <div className="flex items-center gap-2 text-lg font-bold text-stone-700">
+              <Sparkles size={20} className="text-amber-500" />旅程圓滿結束，下次見！
+            </div>
+            <p className="mt-1 text-sm text-stone-500">記得把記事本裡的花費和心得整理起來喔。</p>
+          </div>
+        );
+      }
+
+      const activeDetail = activeEvent
+        ? DAYS.find((day) => day.id === activeEvent.dayId).events.find((event) => event.id === activeEvent.eventId)
+        : null;
+
+      return (
+        <div className="rounded-3xl bg-white/70 p-4 shadow-lg ring-1 ring-white backdrop-blur-md sm:p-5">
+          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold text-white">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-white"></span>
+            </span>
+            Trip in Progress・旅程進行中
+          </span>
+          {activeDetail ? (
+            <div className="mt-3">
+              <div className="text-xs text-stone-500">現在 {activeDetail.start}–{activeDetail.end}</div>
+              <div className="text-lg font-bold text-stone-800">{activeDetail.action}</div>
+              <div className="flex items-center gap-1 text-sm text-stone-600"><MapPin size={14} />{activeDetail.location}</div>
+            </div>
+          ) : nextEvent ? (
+            <div className="mt-3">
+              <div className="text-xs text-stone-500">下一站 {nextEvent.day.dateLabel} {nextEvent.event.start}</div>
+              <div className="text-lg font-bold text-stone-800">{nextEvent.event.action}</div>
+              <div className="flex items-center gap-1 text-sm text-stone-600"><MapPin size={14} />{nextEvent.event.location}</div>
+            </div>
+          ) : null}
+        </div>
+      );
+    };
+
+    const MoodToggle = ({ mood, onChange }) => (
+      <div className="inline-flex rounded-full bg-white/70 p-1 shadow-sm ring-1 ring-white backdrop-blur-md">
+        {Object.entries(MOODS).map(([key, config]) => {
+          const Icon = config.icon;
+          const isActive = mood === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onChange(key)}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all sm:text-sm ${
+                isActive ? `bg-gradient-to-r ${config.accent} text-white shadow` : 'text-stone-500 hover:text-stone-800'
+              }`}
+            >
+              <Icon size={15} />{config.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+
+    const TimelineCard = ({ event, isExpanded, isActive, isPast, onToggle, onCopy, onOpenFood }) => {
+      const Icon = event.icon;
+      const hasDetails = (event.tips && event.tips.length) || event.copyItems || event.foodSpotIds || event.mapQuery;
+      return (
+        <li className="relative pl-14 sm:pl-16">
+          <div
+            className={`absolute left-0 top-3 flex h-10 w-10 items-center justify-center rounded-2xl shadow-md transition-all sm:h-11 sm:w-11 ${
+              isActive
+                ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white ring-4 ring-amber-200'
+                : isPast
+                  ? 'bg-stone-200 text-stone-400'
+                  : 'bg-white text-stone-700'
+            }`}
+          >
+            {isActive && <span className="absolute inset-0 animate-ping rounded-2xl bg-amber-400 opacity-40"></span>}
+            <Icon size={20} className="relative" />
+          </div>
+
+          <div
+            className={`overflow-hidden rounded-3xl bg-white/80 shadow-sm ring-1 backdrop-blur-md transition-all duration-300 hover:shadow-md ${
+              isActive ? 'ring-2 ring-amber-400 shadow-amber-200' : 'ring-white'
+            } ${isPast ? 'opacity-70' : ''}`}
+          >
+            <button
+              type="button"
+              onClick={onToggle}
+              className="flex w-full items-start gap-3 p-4 text-left"
+              aria-expanded={isExpanded}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 font-mono text-sm font-bold text-stone-700">
+                    <Clock size={13} className="text-stone-400" />{event.start}–{event.end}
+                  </span>
+                  <CategoryBadge category={event.category} />
+                  <BookingBadge booking={event.booking} />
+                  {isActive && (
+                    <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">進行中</span>
+                  )}
+                </div>
+                <div className="text-base font-bold text-stone-800 sm:text-lg">{event.action}</div>
+                <div className="mt-0.5 flex items-center gap-1 text-sm text-stone-500">
+                  <MapPin size={13} className="shrink-0" />
+                  <span className="truncate">{event.location}</span>
+                </div>
+                {event.note && <div className="mt-1 text-sm text-stone-600">{event.note}</div>}
+              </div>
+              {hasDetails && (
+                <ChevronDown
+                  size={20}
+                  className={`mt-1 shrink-0 text-stone-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                />
+              )}
+            </button>
+
+            <div className={`grid transition-all duration-300 ease-out ${isExpanded && hasDetails ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+              <div className="overflow-hidden">
+                <div className="space-y-3 border-t border-stone-100 px-4 pb-4 pt-3">
+                  {event.tips && event.tips.length > 0 && (
+                    <ul className="space-y-1.5">
+                      {event.tips.map((tip) => (
+                        <li key={tip} className="flex items-start gap-2 text-sm text-stone-600">
+                          <Sparkles size={14} className="mt-0.5 shrink-0 text-amber-500" />{tip}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {event.copyItems && (
+                    <div className="flex flex-wrap gap-2">
+                      {event.copyItems.map((item) => (
+                        <button
+                          key={item.value}
+                          type="button"
+                          onClick={() => onCopy(item.value)}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-700 transition hover:bg-stone-200 active:scale-95"
+                        >
+                          <Copy size={13} />複製{item.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-2">
+                    {event.mapQuery && (
+                      <a
+                        href={mapUrl(event.mapQuery)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-sky-100 px-3 py-1.5 text-xs font-bold text-sky-700 transition hover:bg-sky-200"
+                      >
+                        <Navigation size={13} />Google 地圖
+                      </a>
+                    )}
+                    {event.foodSpotIds && event.foodSpotIds.map((spotId) => (
+                      <button
+                        key={spotId}
+                        type="button"
+                        onClick={() => onOpenFood(spotId)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-800 transition hover:bg-amber-200 active:scale-95"
+                      >
+                        <CheckSquare size={13} />{FOOD_SPOT_MAP[spotId].name} 必吃清單
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+      );
+    };
+
+    const FoodModal = ({ spot, checkedItems, onToggleItem, onClose, onCopy }) => {
+      useEffect(() => {
+        const handleKey = (keyEvent) => { if (keyEvent.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', handleKey);
+        document.body.style.overflow = 'hidden';
+        return () => {
+          window.removeEventListener('keydown', handleKey);
+          document.body.style.overflow = '';
+        };
+      }, [onClose]);
+
+      const Icon = spot.icon;
+      const doneCount = spot.mustTry.filter((item) => checkedItems[`${spot.id}:${item}`]).length;
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/40 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
+          <div
+            className="w-full max-w-md animate-popIn rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl"
+            onClick={(clickEvent) => clickEvent.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="mb-4 flex items-start gap-3">
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${TONE_CLASSES[spot.tone]}`}>
+                <Icon size={22} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-medium text-stone-500">{spot.area}・{spot.day}</div>
+                <h3 className="text-xl font-black text-stone-800">{spot.name}</h3>
+                <span className="text-xs font-bold text-amber-600">{spot.tag}</span>
+              </div>
+              <button type="button" onClick={onClose} className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700" aria-label="關閉">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-sm font-bold text-stone-700">必吃 / 必買清單</span>
+              <span className="text-xs font-medium text-stone-500">{doneCount}/{spot.mustTry.length} 已完成</span>
+            </div>
+            <ul className="mb-4 space-y-2">
+              {spot.mustTry.map((item) => {
+                const key = `${spot.id}:${item}`;
+                const isChecked = Boolean(checkedItems[key]);
+                return (
+                  <li key={item}>
+                    <button
+                      type="button"
+                      onClick={() => onToggleItem(key)}
+                      className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm transition ${
+                        isChecked ? 'bg-emerald-50 text-stone-400 line-through' : 'bg-stone-50 text-stone-700 hover:bg-amber-50'
+                      }`}
+                    >
+                      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition ${
+                        isChecked ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-stone-300 bg-white'
+                      }`}>
+                        {isChecked && <Check size={13} strokeWidth={3} />}
+                      </span>
+                      {item}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <div className="mb-4 space-y-2 rounded-2xl bg-amber-50 p-3 text-sm text-stone-700">
+              <div className="flex items-start gap-2"><Sparkles size={15} className="mt-0.5 shrink-0 text-amber-500" />{spot.tip}</div>
+              <div className="flex items-start gap-2"><Footprints size={15} className="mt-0.5 shrink-0 text-emerald-500" />{spot.distance}</div>
+            </div>
+
+            <div className="flex gap-2">
+              <a
+                href={mapUrl(spot.mapQuery)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-sky-500 to-cyan-500 py-2.5 text-sm font-bold text-white shadow-md shadow-cyan-500/30 active:scale-95"
+              >
+                <Navigation size={16} />開啟地圖
+              </a>
+              <button
+                type="button"
+                onClick={() => onCopy(spot.name)}
+                className="flex items-center justify-center gap-1.5 rounded-2xl bg-stone-100 px-4 py-2.5 text-sm font-bold text-stone-700 active:scale-95"
+              >
+                <Copy size={16} />複製店名
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const PackingList = ({ items, setItems }) => {
+      const [newText, setNewText] = useState('');
+      const [newCategory, setNewCategory] = useState(PACKING_CATEGORIES[0]);
+      const checkedCount = items.filter((item) => item.checked).length;
+      const progress = items.length ? Math.round((checkedCount / items.length) * 100) : 0;
+
+      const grouped = useMemo(() => {
+        const groups = {};
+        items.forEach((item) => {
+          if (!groups[item.category]) groups[item.category] = [];
+          groups[item.category].push(item);
+        });
+        return Object.entries(groups);
+      }, [items]);
+
+      const addItem = (submitEvent) => {
+        submitEvent.preventDefault();
+        const text = newText.trim();
+        if (!text) return;
+        setItems((previous) => [...previous, { id: `p-${Date.now()}`, text, category: newCategory, checked: false }]);
+        setNewText('');
+      };
+
+      const toggleItem = (id) => setItems((previous) => previous.map((item) => (item.id === id ? { ...item, checked: !item.checked } : item)));
+      const deleteItem = (id) => setItems((previous) => previous.filter((item) => item.id !== id));
+
+      return (
+        <div>
+          <div className="mb-4">
+            <div className="mb-1 flex justify-between text-xs font-medium text-stone-500">
+              <span>打包進度</span><span>{checkedCount}/{items.length}（{progress}%）</span>
+            </div>
+            <div className="h-2.5 overflow-hidden rounded-full bg-stone-200">
+              <div className="h-full rounded-full bg-gradient-to-r from-amber-400 via-emerald-400 to-cyan-400 transition-all duration-500" style={{ width: `${progress}%` }}></div>
+            </div>
+          </div>
+
+          <form onSubmit={addItem} className="mb-4 flex flex-col gap-2 sm:flex-row">
+            <input
+              value={newText}
+              onChange={(changeEvent) => setNewText(changeEvent.target.value)}
+              placeholder="新增要帶的東西…"
+              className="min-w-0 flex-1 rounded-2xl border-0 bg-white px-3 py-2.5 text-sm shadow-sm ring-1 ring-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            />
+            <div className="flex gap-2">
+              <select
+                value={newCategory}
+                onChange={(changeEvent) => setNewCategory(changeEvent.target.value)}
+                className="min-w-0 flex-1 rounded-2xl border-0 bg-white px-3 py-2.5 text-sm shadow-sm ring-1 ring-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              >
+                {PACKING_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+              </select>
+              <button type="submit" className="flex items-center gap-1 rounded-2xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-amber-500/30 hover:bg-amber-600 active:scale-95">
+                <Plus size={16} />新增
+              </button>
+            </div>
+          </form>
+
+          <div className="space-y-4">
+            {grouped.map(([category, categoryItems]) => (
+              <div key={category}>
+                <div className="mb-1.5 text-xs font-bold uppercase tracking-wide text-stone-500">{category}</div>
+                <ul className="space-y-1.5">
+                  {categoryItems.map((item) => (
+                    <li key={item.id} className="group flex items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 shadow-sm ring-1 ring-white">
+                      <button type="button" onClick={() => toggleItem(item.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition ${
+                          item.checked ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-stone-300 bg-white'
+                        }`}>
+                          {item.checked && <Check size={13} strokeWidth={3} />}
+                        </span>
+                        <span className={`text-sm transition ${item.checked ? 'text-stone-400 line-through' : 'text-stone-700'}`}>{item.text}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteItem(item.id)}
+                        className="rounded-lg p-1.5 text-stone-300 transition hover:bg-rose-50 hover:text-rose-500"
+                        aria-label={`刪除 ${item.text}`}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+            {items.length === 0 && <p className="py-6 text-center text-sm text-stone-400">清單是空的，加點東西吧！</p>}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => { if (window.confirm('要還原為預設行李清單嗎？目前的清單會被覆蓋。')) setItems(DEFAULT_PACKING); }}
+            className="mt-4 text-xs text-stone-400 underline-offset-2 hover:text-stone-600 hover:underline"
+          >
+            還原預設清單
+          </button>
+        </div>
+      );
+    };
+
+    const MemoPad = ({ memo, setMemo }) => {
+      const [savedAt, setSavedAt] = useState(null);
+      useEffect(() => {
+        const timer = setTimeout(() => setSavedAt(new Date()), 400);
+        return () => clearTimeout(timer);
+      }, [memo]);
+
+      return (
+        <div>
+          <textarea
+            value={memo}
+            onChange={(changeEvent) => setMemo(changeEvent.target.value)}
+            rows={10}
+            placeholder={'隨手記下心情、花費或要買的東西…\n\n例：\n午餐 池上好店 $620\n大池豆皮 帶 2 包回家'}
+            className="w-full resize-y rounded-2xl border-0 bg-amber-50/80 p-4 text-sm leading-7 text-stone-700 shadow-inner ring-1 ring-amber-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            style={{ backgroundImage: 'repeating-linear-gradient(transparent, transparent 27px, rgba(245,158,11,.15) 28px)', backgroundAttachment: 'local' }}
+          />
+          <div className="mt-2 flex items-center justify-between text-xs text-stone-400">
+            <span>{memo.length} 字</span>
+            <span className="flex items-center gap-1">
+              <CircleCheck size={12} className="text-emerald-500" />
+              已自動儲存在此裝置{savedAt ? `・${savedAt.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}` : ''}
+            </span>
+          </div>
+        </div>
+      );
+    };
+
+    const Toast = ({ message }) => (
+      <div className={`pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center transition-all duration-300 ${message ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+        <div className="flex items-center gap-2 rounded-full bg-stone-800 px-4 py-2 text-sm font-medium text-white shadow-xl">
+          <Check size={16} className="text-emerald-400" />{message}
+        </div>
+      </div>
+    );
+
+    // ---------- App ----------
+    const App = () => {
+      const now = useNow();
+      const activeEvent = useMemo(() => findActiveEvent(now), [Math.floor(now.getTime() / 60000)]);
+      const isInTrip = now >= DEPARTURE && now < TRIP_END;
+
+      const [mood, setMood] = usePersistentState(STORAGE_KEYS.mood, 'sunny');
+      const [packingItems, setPackingItems] = usePersistentState(STORAGE_KEYS.packing, DEFAULT_PACKING);
+      const [memo, setMemo] = usePersistentState(STORAGE_KEYS.memo, '');
+      const [mustEatChecked, setMustEatChecked] = usePersistentState(STORAGE_KEYS.mustEat, {});
+
+      const [activeDayId, setActiveDayId] = useState(() => {
+        const initialNow = getNowOverride() || new Date();
+        const todayDay = DAYS.find((day) => day.date === initialNow.toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' }));
+        return todayDay ? todayDay.id : DAYS[0].id;
+      });
+      const [expandedIds, setExpandedIds] = useState(() => new Set());
+      const [openSpotId, setOpenSpotId] = useState(null);
+      const [toolTab, setToolTab] = useState('packing');
+      const [toastMessage, setToastMessage] = useState('');
+
+      useEffect(() => {
+        if (!toastMessage) return undefined;
+        const timer = setTimeout(() => setToastMessage(''), 1800);
+        return () => clearTimeout(timer);
+      }, [toastMessage]);
+
+      const handleCopy = useCallback(async (text) => {
+        const succeeded = await copyText(text);
+        setToastMessage(succeeded ? `已複製：${text}` : '複製失敗，請手動選取');
+      }, []);
+
+      const toggleExpanded = (eventId) => {
+        setExpandedIds((previous) => {
+          const next = new Set(previous);
+          if (next.has(eventId)) next.delete(eventId); else next.add(eventId);
+          return next;
+        });
+      };
+
+      const toggleMustEat = (key) => setMustEatChecked((previous) => ({ ...previous, [key]: !previous[key] }));
+      const closeModal = useCallback(() => setOpenSpotId(null), []);
+
+      const activeDay = DAYS.find((day) => day.id === activeDayId);
+      const bookedCount = DAYS.reduce((sum, day) => sum + day.events.filter((event) => event.booking && event.booking.type === 'booked').length, 0);
+
+      return (
+        <div className="bg-mood min-h-screen pb-16" style={{ background: MOODS[mood].background }}>
+          {/* Header */}
+          <header className="relative overflow-hidden">
+            <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/40 blur-3xl"></div>
+            <div className="pointer-events-none absolute -left-10 top-24 h-48 w-48 rounded-full bg-white/30 blur-3xl"></div>
+            <div className="relative mx-auto max-w-6xl px-4 pb-6 pt-8 sm:px-6 sm:pt-12">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/60 px-3 py-1 text-xs font-bold text-stone-600 backdrop-blur-md">
+                  <Compass size={14} className="text-emerald-600" />臺東縱谷・溫泉放鬆行
+                </span>
+                <MoodToggle mood={mood} onChange={setMood} />
+              </div>
+
+              <div className="grid items-end gap-6 lg:grid-cols-[1fr_auto]">
+                <div className="animate-fadeUp">
+                  <h1 className="text-3xl font-black leading-tight tracking-tight text-stone-800 sm:text-5xl">
+                    池上 x 知本・<br className="sm:hidden" />小狒狒放鬆之旅 <span className="inline-block animate-floaty">🐒</span>
+                  </h1>
+                  <p className="mt-2 flex items-center gap-2 text-sm font-medium text-stone-600 sm:text-base">
+                    <Calendar size={16} />10/16 (五) - 10/18 (日) • 三天兩夜行程助手
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-3 py-1 font-medium text-stone-600"><Train size={13} />3 段火車</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-3 py-1 font-medium text-stone-600"><CircleCheck size={13} className="text-emerald-500" />{bookedCount} 項已預定</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-3 py-1 font-medium text-stone-600"><Bath size={13} />知本溫泉</span>
+                  </div>
+                </div>
+                <div className="animate-fadeUp" style={{ animationDelay: '.1s' }}>
+                  <StatusCard now={now} activeEvent={activeEvent} />
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <main className="mx-auto max-w-6xl px-4 sm:px-6">
+            {/* Day tabs */}
+            <nav className="sticky top-0 z-30 -mx-4 mb-5 bg-gradient-to-b from-white/60 to-transparent px-4 py-3 backdrop-blur-md sm:mx-0 sm:rounded-3xl sm:px-0">
+              <div className="no-scrollbar flex gap-2 overflow-x-auto sm:grid sm:grid-cols-3">
+                {DAYS.map((day) => {
+                  const isActive = day.id === activeDayId;
+                  const isToday = activeEvent && activeEvent.dayId === day.id;
+                  return (
+                    <button
+                      key={day.id}
+                      type="button"
+                      onClick={() => setActiveDayId(day.id)}
+                      className={`relative min-w-[9.5rem] flex-1 rounded-2xl px-3 py-2.5 text-left transition-all duration-300 ${
+                        isActive
+                          ? `bg-gradient-to-br ${day.gradient} text-stone-900 shadow-lg`
+                          : 'bg-white/70 text-stone-600 hover:bg-white'
+                      }`}
+                    >
+                      {isToday && (
+                        <span className="absolute right-2 top-2 flex h-2.5 w-2.5">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-500 opacity-75"></span>
+                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-orange-500"></span>
+                        </span>
+                      )}
+                      <div className="text-xs font-bold opacity-80">{day.tabLabel}・{day.dateLabel}</div>
+                      <div className="truncate text-sm font-black sm:text-base">{day.emoji} {day.theme}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+              {/* Timeline */}
+              <section>
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-black text-stone-800">{activeDay.subtitle}</h2>
+                    <p className="text-xs text-stone-500">點擊卡片查看貼心提醒、複製資訊與必吃清單</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allIds = activeDay.events.map((event) => event.id);
+                      const allOpen = allIds.every((id) => expandedIds.has(id));
+                      setExpandedIds((previous) => {
+                        const next = new Set(previous);
+                        allIds.forEach((id) => (allOpen ? next.delete(id) : next.add(id)));
+                        return next;
+                      });
+                    }}
+                    className="shrink-0 rounded-full bg-white/70 px-3 py-1.5 text-xs font-bold text-stone-600 hover:bg-white"
+                  >
+                    {activeDay.events.every((event) => expandedIds.has(event.id)) ? '全部收合' : '全部展開'}
+                  </button>
+                </div>
+
+                <ol key={activeDay.id} className="relative space-y-3">
+                  <div className="absolute bottom-6 left-5 top-6 w-0.5 rounded-full bg-gradient-to-b from-amber-300 via-emerald-300 to-cyan-300 sm:left-[22px]"></div>
+                  {activeDay.events.map((event, index) => {
+                    const isActive = Boolean(activeEvent && activeEvent.eventId === event.id);
+                    const isPast = isInTrip && toDate(activeDay.date, event.end) <= now;
+                    return (
+                      <div key={event.id} className="animate-fadeUp" style={{ animationDelay: `${index * 0.05}s` }}>
+                        <TimelineCard
+                          event={event}
+                          isExpanded={expandedIds.has(event.id)}
+                          isActive={isActive}
+                          isPast={isPast}
+                          onToggle={() => toggleExpanded(event.id)}
+                          onCopy={handleCopy}
+                          onOpenFood={setOpenSpotId}
+                        />
+                      </div>
+                    );
+                  })}
+                </ol>
+              </section>
+
+              {/* Toolbox */}
+              <aside className="lg:sticky lg:top-24 lg:self-start">
+                <div className="rounded-3xl bg-white/70 p-4 shadow-lg shadow-stone-900/5 ring-1 ring-white backdrop-blur-md sm:p-5">
+                  <div className="mb-4 flex rounded-2xl bg-stone-100 p-1">
+                    {[
+                      { key: 'packing', label: '行李清單', icon: Luggage },
+                      { key: 'memo', label: '隨手記事', icon: NotebookPen },
+                    ].map((tab) => {
+                      const Icon = tab.icon;
+                      const isActive = toolTab === tab.key;
+                      return (
+                        <button
+                          key={tab.key}
+                          type="button"
+                          onClick={() => setToolTab(tab.key)}
+                          className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-bold transition ${
+                            isActive ? 'bg-white text-stone-800 shadow' : 'text-stone-500 hover:text-stone-700'
+                          }`}
+                        >
+                          <Icon size={16} />{tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {toolTab === 'packing'
+                    ? <PackingList items={packingItems} setItems={setPackingItems} />
+                    : <MemoPad memo={memo} setMemo={setMemo} />}
+                </div>
+              </aside>
+            </div>
+
+            {/* Food guide */}
+            <section className="mt-10">
+              <div className="mb-4">
+                <h2 className="flex items-center gap-2 text-xl font-black text-stone-800">
+                  <Utensils size={20} className="text-amber-500" />在地美食 & 伴手禮
+                </h2>
+                <p className="text-xs text-stone-500">點擊店家查看必吃推薦、交通小提示，並勾選吃過的品項</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {FOOD_SPOTS.map((spot, index) => {
+                  const Icon = spot.icon;
+                  const doneCount = spot.mustTry.filter((item) => mustEatChecked[`${spot.id}:${item}`]).length;
+                  return (
+                    <button
+                      key={spot.id}
+                      type="button"
+                      onClick={() => setOpenSpotId(spot.id)}
+                      className="group animate-fadeUp rounded-3xl bg-white/80 p-4 text-left shadow-sm ring-1 ring-white backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                      style={{ animationDelay: `${index * 0.04}s` }}
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${TONE_CLASSES[spot.tone]} transition-transform group-hover:scale-110`}>
+                          <Icon size={20} />
+                        </div>
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${spot.area === '池上' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                          {spot.area}
+                        </span>
+                      </div>
+                      <div className="font-black text-stone-800">{spot.name}</div>
+                      <div className="text-xs font-medium text-amber-600">{spot.tag}</div>
+                      <div className="mt-2 line-clamp-1 text-xs text-stone-500">必吃：{spot.mustTry.slice(0, 2).join('、')}</div>
+                      <div className="mt-3 flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1 text-stone-400"><MapPin size={12} />{spot.day}</span>
+                        <span className={`font-bold ${doneCount === spot.mustTry.length ? 'text-emerald-600' : 'text-stone-400'}`}>
+                          {doneCount}/{spot.mustTry.length}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <footer className="mt-12 text-center text-xs text-stone-400">
+              行李清單、記事本與必吃勾選皆儲存在此裝置瀏覽器中・祝旅途愉快 🐒
+            </footer>
+          </main>
+
+          {openSpotId && (
+            <FoodModal
+              spot={FOOD_SPOT_MAP[openSpotId]}
+              checkedItems={mustEatChecked}
+              onToggleItem={toggleMustEat}
+              onClose={closeModal}
+              onCopy={handleCopy}
+            />
+          )}
+          <Toast message={toastMessage} />
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
